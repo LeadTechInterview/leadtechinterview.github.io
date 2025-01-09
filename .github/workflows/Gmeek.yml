@@ -20,6 +20,8 @@ jobs:
 
   check-membership:
     runs-on: ubuntu-20.04
+    outputs:
+      is_member: ${{ steps.check_membership.outputs.is_member }}
     steps:
       - name: Check if user is org member
         id: check_membership
