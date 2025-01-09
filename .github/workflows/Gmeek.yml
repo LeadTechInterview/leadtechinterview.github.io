@@ -24,12 +24,15 @@ jobs:
       - name: Check if user is org member
         id: check_membership
         uses: actions/github-script@v6
+        env:
+          ORG_NAME: '${{ github.event.repository.owner.login '
+          USER_LOGIN: '${{ github.event.sender.login }}'
         with:
           script: |
             console.log('github.event:', '${{ toJSON(github.event) }}');
             console.log('context.payload:', context.payload);
-            const org = '${{ github.event.repository.owner.login }}';
-            const username = '${{ github.event.sender.login }}';
+            const org = process.env.ORG_NAME;
+            const username = process.env.USER_LOGIN;
             try {
               await github.rest.orgs.checkMembershipForUser({
                 org: org,
