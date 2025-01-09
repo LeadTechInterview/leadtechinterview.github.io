@@ -1,2 +1,43 @@
 <?xml version='1.0' encoding='UTF-8'?>
-<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>Blog Title</title><link>https://Meekdai.github.io/Gmeek-template</link><description>Blog description</description><copyright>Blog Title</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>https://Meekdai.github.io/Gmeek-template</link></image><lastBuildDate>Thu, 14 Mar 2024 09:17:29 +0000</lastBuildDate><managingEditor>Blog Title</managingEditor><ttl>60</ttl><webMaster>Blog Title</webMaster><item><title>请接着之后的安装步骤执行</title><link>https://Meekdai.github.io/Gmeek-template/post/qing-jie-zhao-zhi-hou-de-an-zhuang-bu-zou-zhi-xing.html</link><description>如果你点击了`READM.md`的链接后，看到了这个页面，请继续之后的安装步骤执行。</description><guid isPermaLink="true">https://Meekdai.github.io/Gmeek-template/post/qing-jie-zhao-zhi-hou-de-an-zhuang-bu-zou-zhi-xing.html</guid><pubDate>Thu, 14 Mar 2024 09:15:10 +0000</pubDate></item><item><title>这是Gmeek模板仓库</title><link>https://Meekdai.github.io/Gmeek-template/post/zhe-shi-Gmeek-mo-ban-cang-ku.html</link><description>通过这个模板创建库，可以大大减少部署Gmeek博客的配置步骤。</description><guid isPermaLink="true">https://Meekdai.github.io/Gmeek-template/post/zhe-shi-Gmeek-mo-ban-cang-ku.html</guid><pubDate>Wed, 20 Dec 2023 07:42:24 +0000</pubDate></item></channel></rss>
+<rss xmlns:atom="http://www.w3.org/2005/Atom" xmlns:content="http://purl.org/rss/1.0/modules/content/" version="2.0"><channel><title>Lead Tech Interview</title><link>https://leadtechinterview.github.io</link><description>Preparing for the Big Leap</description><copyright>Lead Tech Interview</copyright><docs>http://www.rssboard.org/rss-specification</docs><generator>python-feedgen</generator><image><url>https://github.githubassets.com/favicons/favicon.svg</url><title>avatar</title><link>https://leadtechinterview.github.io</link></image><lastBuildDate>Thu, 09 Jan 2025 08:33:05 +0000</lastBuildDate><managingEditor>Lead Tech Interview</managingEditor><ttl>60</ttl><webMaster>Lead Tech Interview</webMaster><item><title>Simplified Back-of-the-Envelope Calculation Cheat Sheet</title><link>https://leadtechinterview.github.io/post/Simplified%20Back-of-the-Envelope%20Calculation%20Cheat%20Sheet.html</link><description>### **Simplified Back-of-the-Envelope Calculation Cheat Sheet**&#13;
+&#13;
+| **Category**         | **Metric**                          | **Value**                     | **Notes**                                                                 |&#13;
+|-----------------------|-------------------------------------|-------------------------------|---------------------------------------------------------------------------|&#13;
+| **Time**             | 1 second                           | 1,000 milliseconds (ms)       | Useful for latency calculations.                                         |&#13;
+|                       | 1 day                              | ~100,000 seconds              | Rounded up for easier estimation.                                        |&#13;
+| **Data Size**        | 1 kilobyte (KB)                    | 10&lt;sup&gt;3&lt;/sup&gt; bytes          | ~1,000 bytes (thousand).                                                 |&#13;
+|                       | 1 megabyte (MB)                    | 10&lt;sup&gt;6&lt;/sup&gt; bytes          | ~1,000 KB (million).                                                     |&#13;
+|                       | 1 gigabyte (GB)                    | 10&lt;sup&gt;9&lt;/sup&gt; bytes          | ~1,000 MB (billion).                                                     |&#13;
+|                       | 1 terabyte (TB)                    | 10&lt;sup&gt;12&lt;/sup&gt; bytes         | ~1,000 GB (trillion).                                                    |&#13;
+| **Network**          | Bandwidth of 1 Gbps                | 125 MB/s                      | 1 Gbps = 1,000 Mbps = 125 MB/s (divide by 8 to convert bits to bytes).   |&#13;
+|                       | Round-trip time (RTT)              | ~100 ms (within a region)     | Assumes low latency within a data center or region.                      |&#13;
+| **Storage**          | SSD latency                        | ~0.1 ms (100 μs)              | Fast read/write times for SSDs.                                          |&#13;
+|                       | HDD latency                        | ~10 ms                        | Slower than SSDs but cheaper for bulk storage.                           |&#13;
+| **Throughput**       | Requests per second (RPS)          | ~1,000 RPS per server         | Depends on server capacity and workload.                                 |&#13;
+|                       | Queries per second (QPS)           | ~10,000 QPS per database      | Depends on database type and optimization.                               |&#13;
+| **Memory**           | RAM access time                    | ~100 ns                       | Much faster than disk access.                                            |&#13;
+|                       | Cache access time (L1)             | ~1 ns                         | Extremely fast access for frequently used data.                          |&#13;
+| **Users**            | Daily Active Users (DAU)           | ~10% of total users           | Assumes 10% of users are active daily.                                   |&#13;
+|                       | Monthly Active Users (MAU)         | ~30% of total users           | Assumes 30% of users are active monthly.                                 |&#13;
+| **Traffic**          | Reads vs. Writes                   | ~90% reads, 10% writes        | Common for read-heavy systems (e.g., social media).                      |&#13;
+|                       | Peak traffic multiplier            | ~2x to 10x average traffic    | Plan for peak traffic spikes (e.g., Black Friday).                       |&#13;
+| **Miscellaneous**    | UUID size                          | 128 bits (16 bytes)           | Unique identifier size.                                                  |&#13;
+|                       | Compression ratio                  | ~2x to 10x                    | Depends on data type (e.g., text compresses better than images).         |&#13;
+&#13;
+---&#13;
+&#13;
+### **How to Use This Table**&#13;
+1. **Estimate Traffic**: Use DAU/MAU and peak traffic multipliers to estimate requests per second.&#13;
+2. **Calculate Bandwidth**: Convert between bits and bytes to estimate network throughput.&#13;
+3. **Compare Latencies**: Use SSD/HDD/RAM latencies to decide storage and caching strategies.&#13;
+4. **Size Data**: Use data size conversions to estimate storage requirements.&#13;
+5. **Plan for Scale**: Use RPS/QPS estimates to determine the number of servers or databases needed.&#13;
+&#13;
+---&#13;
+&#13;
+### **Example Calculation**&#13;
+- **Scenario**: You’re designing a system with 1 million DAU, and each user makes 10 requests per day.&#13;
+  - Total requests per day = 1,000,000 × 10 = 10,000,000 requests/day.&#13;
+  - Requests per second (RPS) = 10,000,000 / 100,000 ≈ 100 RPS.&#13;
+  - Peak traffic = 100 × 5 (assume 5x multiplier) ≈ 500 RPS.&#13;
+  - If each server handles 1,000 RPS, you’ll need ~1 server (with room for growth).。</description><guid isPermaLink="true">https://leadtechinterview.github.io/post/Simplified%20Back-of-the-Envelope%20Calculation%20Cheat%20Sheet.html</guid><pubDate>Thu, 09 Jan 2025 02:08:28 +0000</pubDate></item></channel></rss>
