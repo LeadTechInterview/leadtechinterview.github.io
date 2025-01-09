@@ -25,7 +25,7 @@ jobs:
         id: check_membership
         uses: actions/github-script@v6
         env:
-          ORG_NAME: '${{ github.event.repository.owner.login '
+          ORG_NAME: '${{ github.event.repository.owner.login }}'
           USER_LOGIN: '${{ github.event.sender.login }}'
         with:
           script: |
