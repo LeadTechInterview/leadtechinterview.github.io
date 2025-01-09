@@ -29,17 +29,22 @@ jobs:
           USER_LOGIN: '${{ github.event.sender.login }}'
         with:
           script: |
-            console.log('context.payload:', context.payload);
+            console.log('Repository owner:', process.env.ORG_NAME);
+            console.log('User login:', process.env.USER_LOGIN);
+            console.log('Repository owner ID:', context.payload.repository.owner.id);
+            console.log('Sender ID:', context.payload.sender.id);
             const org = process.env.ORG_NAME;
             const username = process.env.USER_LOGIN;
             try {
-              await github.rest.orgs.checkMembershipForUser({
+              const response = await github.rest.orgs.checkMembershipForUser({
                 org: org,
                 username: username,
               });
+              console.log('API Response:', response);
               console.log(`User ${username} is a member of ${org}`);
               core.setOutput('is_member', 'true');
             } catch (error) {
+              console.log('Error details:', error);
               console.log(`User ${username} is NOT a member of ${org}`);
               core.setOutput('is_member', 'false');
             }
