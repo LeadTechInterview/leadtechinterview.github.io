@@ -26,10 +26,12 @@ jobs:
         uses: actions/github-script@v6
         with:
           script: |
+            console.log('github.event:', '${{ toJSON(github.event) }}');
+            console.log('context.payload:', context.payload);
             try {
               await github.rest.orgs.checkMembershipForUser({
                 org: 'LeadTechInterview',
-                username: context.payload.sender.login,
+                username: github.event.sender.login,
               });
               console.log('User is a member of the org');
               core.setOutput('is_member', 'true');
