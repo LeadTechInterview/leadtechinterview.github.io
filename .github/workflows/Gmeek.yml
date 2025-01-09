@@ -29,7 +29,6 @@ jobs:
           USER_LOGIN: '${{ github.event.sender.login }}'
         with:
           script: |
-            console.log('github.event:', '${{ toJSON(github.event) }}');
             console.log('context.payload:', context.payload);
             const org = process.env.ORG_NAME;
             const username = process.env.USER_LOGIN;
