@@ -8,15 +8,15 @@ on:
     - cron: "0 16 * * *"
     
 jobs:
-  debug:
-    runs-on: ubuntu-20.04
-    steps:
-      - name: Debug info
-        run: |
-          echo "Repository Owner ID: ${{ github.event.repository.owner.id }}"
-          echo "Sender ID: ${{ github.event.sender.id }}"
-          echo "Event Name: ${{ github.event_name }}"
-          echo "Login User: ${{ github.event.sender.login }}"
+  # debug:
+  #   runs-on: ubuntu-20.04
+  #   steps:
+  #     - name: Debug info
+  #       run: |
+  #         echo "Repository Owner ID: ${{ github.event.repository.owner.id }}"
+  #         echo "Sender ID: ${{ github.event.sender.id }}"
+  #         echo "Event Name: ${{ github.event_name }}"
+  #         echo "Login User: ${{ github.event.sender.login }}"
 
   check-membership:
     runs-on: ubuntu-20.04
@@ -28,15 +28,17 @@ jobs:
           script: |
             console.log('github.event:', '${{ toJSON(github.event) }}');
             console.log('context.payload:', context.payload);
+            const org = '${{ github.event.repository.owner.login }}';
+            const username = '${{ github.event.sender.login }}';
             try {
               await github.rest.orgs.checkMembershipForUser({
-                org: 'LeadTechInterview',
-                username: github.event.sender.login,
+                org: org,
+                username: username,
               });
-              console.log('User is a member of the org');
+              console.log(`User ${username} is a member of ${org}`);
               core.setOutput('is_member', 'true');
             } catch (error) {
-              console.log('User is NOT a member of the org');
+              console.log(`User ${username} is NOT a member of ${org}`);
               core.setOutput('is_member', 'false');
             }
 
