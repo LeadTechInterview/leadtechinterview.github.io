@@ -36,7 +36,7 @@ jobs:
             const org = process.env.ORG_NAME;
             const username = process.env.USER_LOGIN;
             try {
-              const response = await github.rest.orgs.checkMembershipForUser({
+              const response = await github.rest.orgs.getMembershipForUser({
                 org: org,
                 username: username,
               });
