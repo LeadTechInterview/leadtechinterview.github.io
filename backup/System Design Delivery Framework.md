@@ -18,6 +18,43 @@
 
 7. Deep Dives (10 mins): Address non-functional requirements, edge cases, and bottlenecks. Proactively improve the design (e.g., scaling, caching, database sharding).
 
+```mermaid
+flowchart TD
+    %% Define style classes
+    classDef step fill:#F4D03F,stroke:#B7950B,stroke-width:2px,color:#1C2833,rx:5px
+    classDef note fill:#D6EAF8,stroke:#5499C7,stroke-width:1px,color:#1C2833,rx:5px,font-size:14px
+    classDef start_end fill:#A9DFBF,stroke:#28B463,stroke-width:2px,color:#1C2833,rx:5px
+
+    %% Main nodes
+    Start([Start]):::start_end --> Step1[Requirements: 5 mins]:::step
+    Step1 --> Step2[Capacity Estimation]:::step
+    Step2 --> Step3[Core Entities: 2 mins]:::step
+    Step3 --> Step4[API/System Interface: 5 mins]:::step
+    Step4 --> Step5[Data Flow: 5 mins]:::step
+    Step5 --> Step6[High-Level Design: 10-15 mins]:::step
+    Step6 --> Step7[Deep Dives: 10 mins]:::step
+    Step7 --> End([End]):::start_end
+
+    %% Notes aligned symmetrically
+    Note1["Identify core features and<br>consider scalability, latency, availability"]:::note
+    Note2["Skip unless critical (e.g.,<br>sharding in TopK systems)"]:::note
+    Note3["Define foundational entities like<br>User, Tweet, Follow"]:::note
+    Note4["Outline API contracts.<br>Prefer RESTful unless GraphQL needed"]:::note
+    Note5["Optional for data-heavy<br>systems like web crawlers"]:::note
+    Note6["Draw architecture<br>Iterate based on APIs"]:::note
+    Note7["Address bottlenecks and<br>consider caching, sharding, scaling"]:::note
+
+    %% Symmetric note connections
+    Step1 --- Note1
+    Step2 --- Note2
+    Step3 --- Note3
+    Step4 --- Note4
+    Step5 --- Note5
+    Step6 --- Note6
+    Step7 --- Note7
+
+```
+
 # Tips:
 
 1. Avoid overcomplicating the design early on.
