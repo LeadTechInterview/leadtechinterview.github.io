@@ -64,9 +64,9 @@ User already have the details o the event, like tickets available, then user can
     -  update the ticket status to booked once payment is done
     -  new order record is added in the same transaction.
 
-## Deep dive
+# Deep dive
 
-### Bad user experience when booking
+## Bad user experience when booking
 
 User find the available ticket and then pay for them, but found that it turns out to be ordered, the problem is that we don't reserve for the tickets.  
 
@@ -87,20 +87,20 @@ A more preferred way is to use Redis, and it works as below:
 2. the payment service can callback order service once the payment succeeds, with the order id
 3. order service write the payment detail in order record, and change the ticket status to "booked"
 
-### How to scale up to tenth of millions of concurrent users during popular events
+## How to scale up to tenth of millions of concurrent users during popular events
 
 To cope with read heavy view events up to tenth of millions:
 
 - we can utilize cache, since the view event is mostly unchanged
 -  event service is stateless, so it can easily scale horizontally, and we can use load balance before the event services
 
-### How to handle millions of concurrent bookings during popular events
+## How to handle millions of concurrent bookings during popular events
 
 First the user should be able to be notified that the ticket states immediately, polling won't work in this case, SSE(server send event) works for this case. But still the system may not able to handle such a kind of burst, and we need a mechanism to protect the system, we can add a toggled feature that could be enabled in this case, and park the users in a queue, and the client can use websocket to send request to the queuing service to get a token,  once order service deque a user from the queue, it can issue a token for the user, and notify the user via websocket to send the order request.
 
 ![image](https://github.com/user-attachments/assets/17098f97-99c0-4c2e-8476-8aec4e550da4)
 
-### How to improve search to meet low latency requirements?
+## How to improve search to meet low latency requirements?
 
 SQL "like" will scan the whole table, it's not efficient, we can either build full text index in DB, or use ElasticSearch with updates via CDC (Change Data Capture).
 
