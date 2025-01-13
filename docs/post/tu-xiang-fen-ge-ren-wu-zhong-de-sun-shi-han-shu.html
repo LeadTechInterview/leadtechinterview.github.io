@@ -1,0 +1,850 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    <script src='https://blog.meekdai.com/Gmeek/plugins/GmeekVercount.js'></script>
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon.svg"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="本文介绍了几种用于图像分割任务的损失函数，包括 **Dice Loss**、**BCE-Dice Loss**、**IoU Loss** 和 **Focal Loss**。">
+<meta property="og:title" content="图像分割任务中的损失函数">
+<meta property="og:description" content="本文介绍了几种用于图像分割任务的损失函数，包括 **Dice Loss**、**BCE-Dice Loss**、**IoU Loss** 和 **Focal Loss**。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://leadtechinterview.github.io/post/tu-xiang-fen-ge-ren-wu-zhong-de-sun-shi-han-shu.html">
+<meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
+<title>图像分割任务中的损失函数</title>
+<link href="//unpkg.com/@wooorm/starry-night@2.1.1/style/both.css" rel="stylesheet" />
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+.copy-feedback {
+    display: none;
+    position: absolute;
+    top: 10px;
+    right: 50px;
+    color: var(--color-fg-on-emphasis);
+    background-color: var(--color-fg-muted);
+    border-radius: 3px;
+    padding: 5px 8px;
+    font-size: 12px;
+}
+</style>
+<style>.markdown-alert{padding:0.5rem 1rem;margin-bottom:1rem;border-left:.25em solid var(--borderColor-default,var(--color-border-default));}.markdown-alert .markdown-alert-title {display:flex;font-weight:var(--base-text-weight-medium,500);align-items:center;line-height:1;}.markdown-alert>:first-child {margin-top:0;}.markdown-alert>:last-child {margin-bottom:0;}</style><style>.markdown-alert.markdown-alert-note {border-left-color:var(--borderColor-accent-emphasis, var(--color-accent-emphasis));background-color:var(--color-accent-subtle);}.markdown-alert.markdown-alert-note .markdown-alert-title {color: var(--fgColor-accent,var(--color-accent-fg));}</style>
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">图像分割任务中的损失函数</h1>
+<div class="title-right">
+    <a href="https://leadtechinterview.github.io" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/LeadTechInterview/leadtechinterview.github.io/issues/11" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><p>本文介绍了几种用于图像分割任务的损失函数，包括 <strong>Dice Loss</strong>、<strong>BCE-Dice Loss</strong>、<strong>IoU Loss</strong> 和 <strong>Focal Loss</strong>。以下是对每种损失函数的详细解释和代码实现。</p>
+<h2>1. Dice Loss</h2>
+<h3>公式</h3>
+<p>Dice 系数（Dice Similarity Coefficient, DSC）定义为：</p>
+<p>$$
+DSC = \frac{2|X \cap Y|}{|X| + |Y|}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>
+$X$和 $Y$分别代表预测的分割区域和真实的分割区域。</li>
+<li>
+$|X \cap Y|$ 代表 $X$ 和 $Y$ 的交集（重叠部分）的像素数量。</li>
+<li>
+$|X|$ 和 $|Y|$ 分别代表 $X$ 和 $Y$ 的像素数量。</li>
+</ul>
+<p>Dice Loss 的目标是最大化 DSC，因此损失函数定义为：</p>
+<p>$$
+\text{Dice Loss} = 1 - DSC
+$$</p>
+<h3>代码实现</h3>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span>.<span class="pl-s1">functional</span> <span class="pl-k">as</span> <span class="pl-c1">F</span>
+
+<span class="pl-k">def</span> <span class="pl-en">dice_loss</span>(<span class="pl-s1">inputs</span>, <span class="pl-s1">targets</span>, <span class="pl-s1">smooth</span><span class="pl-c1">=</span><span class="pl-c1">1</span>):
+    <span class="pl-s1">inputs</span> <span class="pl-c1">=</span> <span class="pl-c1">F</span>.<span class="pl-c1">sigmoid</span>(<span class="pl-s1">inputs</span>)  <span class="pl-c"># 对输入进行 sigmoid 激活，将其值压缩到 0 到 1 之间</span>
+    <span class="pl-s1">inputs</span> <span class="pl-c1">=</span> <span class="pl-s1">inputs</span>.<span class="pl-c1">view</span>(<span class="pl-c1">-</span><span class="pl-c1">1</span>)    <span class="pl-c"># 将输入展平成一维向量</span>
+    <span class="pl-s1">targets</span> <span class="pl-c1">=</span> <span class="pl-s1">targets</span>.<span class="pl-c1">view</span>(<span class="pl-c1">-</span><span class="pl-c1">1</span>)  <span class="pl-c"># 将目标展平成一维向量</span>
+    
+    <span class="pl-s1">intersection</span> <span class="pl-c1">=</span> (<span class="pl-s1">inputs</span> <span class="pl-c1">*</span> <span class="pl-s1">targets</span>).<span class="pl-c1">sum</span>()  <span class="pl-c"># 计算交集</span>
+    <span class="pl-s1">dice</span> <span class="pl-c1">=</span> (<span class="pl-c1">2.</span> <span class="pl-c1">*</span> <span class="pl-s1">intersection</span> <span class="pl-c1">+</span> <span class="pl-s1">smooth</span>) <span class="pl-c1">/</span> (<span class="pl-s1">inputs</span>.<span class="pl-c1">sum</span>() <span class="pl-c1">+</span> <span class="pl-s1">targets</span>.<span class="pl-c1">sum</span>() <span class="pl-c1">+</span> <span class="pl-s1">smooth</span>)  <span class="pl-c"># smooth 是一个平滑项，防止分母为 0。</span>
+    <span class="pl-k">return</span> <span class="pl-c1">1</span> <span class="pl-c1">-</span> <span class="pl-s1">dice</span>  <span class="pl-c"># 返回 Dice Loss</span></pre></div>
+<hr>
+<h2>2. Binary Cross Entropy Loss, BCE</h2>
+<h3>公式</h3>
+<p>二元交叉熵损失用于衡量模型预测的概率分布与真实分布之间的差异。对于每个像素，BCE Loss 的公式为：</p>
+<p>$$
+L(y, p) = -[y \log(p) + (1 - y) \log(1 - p)]
+$$</p>
+<p>其中：</p>
+<ul>
+<li>
+$y$ 是真实标签（0 或 1）。</li>
+<li>
+$p$ 是模型预测该像素为 1 的概率（取值范围为 0 到 1）。</li>
+</ul>
+<p>总的 BCE Loss 是所有像素的平均损失：</p>
+<p>$$
+\text{BCE Loss} = \frac{1}{N} \sum_{i=1}^N L(y_i, p_i)
+$$</p>
+<p>其中 $N$ 是像素总数。</p>
+<h3>代码实现</h3>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">import</span> <span class="pl-s1">torch</span>
+<span class="pl-k">import</span> <span class="pl-s1">torch</span>.<span class="pl-s1">nn</span>.<span class="pl-s1">functional</span> <span class="pl-k">as</span> <span class="pl-c1">F</span>
+
+<span class="pl-k">def</span> <span class="pl-en">bce_loss</span>(<span class="pl-s1">inputs</span>, <span class="pl-s1">targets</span>):
+    <span class="pl-c"># 对输入进行 sigmoid 激活，将其值压缩到 0 到 1 之间</span>
+    <span class="pl-s1">inputs</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">sigmoid</span>(<span class="pl-s1">inputs</span>)
+    
+    <span class="pl-c"># 计算 BCE Loss</span>
+    <span class="pl-c1">BCE</span> <span class="pl-c1">=</span> <span class="pl-c1">F</span>.<span class="pl-c1">binary_cross_entropy</span>(<span class="pl-s1">inputs</span>, <span class="pl-s1">targets</span>, <span class="pl-s1">reduction</span><span class="pl-c1">=</span><span class="pl-s">'mean'</span>)
+    <span class="pl-k">return</span> <span class="pl-c1">BCE</span></pre></div>
+<h3>BCE Loss 的特点</h3>
+<ol>
+<li><strong>逐像素计算</strong>：BCE Loss 对每个像素的预测结果进行独立评估，适合需要精确像素级分类的任务。</li>
+<li><strong>对类别不平衡敏感</strong>：在类别不平衡的情况下（如背景像素远多于目标像素），BCE Loss 容易被大量简单的负样本主导，导致模型难以学习到正样本的特征。</li>
+<li><strong>与 Dice Loss 的比较</strong>：
+<ul>
+<li><strong>BCE Loss</strong>：关注每个像素的分类准确性，对像素级的错误敏感。</li>
+<li><strong>Dice Loss</strong>：关注整体区域的重叠程度，对区域形状和大小更敏感，对类别不平衡问题鲁棒性更好。</li>
+</ul>
+</li>
+<li><strong>BCE Loss</strong> 是一种常用的损失函数，适合需要精确像素级分类的任务。</li>
+<li>在类别不平衡的情况下，BCE Loss 可能表现不佳，此时可以结合 <strong>Dice Loss</strong> 或使用 <strong>Focal Loss</strong> 来改进模型性能。</li>
+</ol>
+<hr>
+<h2>3. BCE-Dice Loss</h2>
+<h3>概念</h3>
+<p>BCE-Dice Loss 是二元交叉熵损失（Binary Cross Entropy Loss, BCE）和 Dice Loss 的结合。BCE Loss 对每个像素进行独立评估，而 Dice Loss 关注整体的区域重叠。结合两者可以提高分割效果。</p>
+<h3>代码实现</h3>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">def</span> <span class="pl-en">bce_dice_loss</span>(<span class="pl-s1">inputs</span>, <span class="pl-s1">targets</span>, <span class="pl-s1">smooth</span><span class="pl-c1">=</span><span class="pl-c1">1</span>):
+    <span class="pl-c"># 计算 Dice Loss</span>
+    <span class="pl-s1">dice</span> <span class="pl-c1">=</span> <span class="pl-en">dice_loss</span>(<span class="pl-s1">inputs</span>, <span class="pl-s1">targets</span>, <span class="pl-s1">smooth</span>)
+    
+    <span class="pl-c"># 计算 BCE Loss</span>
+    <span class="pl-c1">BCE</span> <span class="pl-c1">=</span> <span class="pl-c1">F</span>.<span class="pl-c1">binary_cross_entropy</span>(<span class="pl-c1">F</span>.<span class="pl-c1">sigmoid</span>(<span class="pl-s1">inputs</span>), <span class="pl-s1">targets</span>, <span class="pl-s1">reduction</span><span class="pl-c1">=</span><span class="pl-s">'mean'</span>)
+    
+    <span class="pl-c"># 结合 BCE 和 Dice Loss</span>
+    <span class="pl-v">Dice_BCE</span> <span class="pl-c1">=</span> <span class="pl-c1">BCE</span> <span class="pl-c1">+</span> <span class="pl-s1">dice</span>
+    <span class="pl-k">return</span> <span class="pl-v">Dice_BCE</span></pre></div>
+<hr>
+<h2>4. IoU Loss (Intersection over Union Loss)</h2>
+<h3>公式</h3>
+<p>IoU（Intersection over Union）定义为：</p>
+<p>$$
+IoU = \frac{|X \cap Y|}{|X \cup Y|}
+$$</p>
+<p>其中：</p>
+<ul>
+<li>
+$|X \cup Y|$代表 $X$ 和 $Y$ 的并集（所有包含在 $X$ 或 $Y$ 中的像素）的像素数量。</li>
+</ul>
+<p>IoU Loss 的目标是最大化 IoU，因此损失函数定义为：</p>
+<p>$$
+\text{IoU Loss} = 1 - IoU
+$$</p>
+<h3>代码实现</h3>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">def</span> <span class="pl-en">iou_loss</span>(<span class="pl-s1">inputs</span>, <span class="pl-s1">targets</span>, <span class="pl-s1">smooth</span><span class="pl-c1">=</span><span class="pl-c1">1</span>):
+    <span class="pl-s1">inputs</span> <span class="pl-c1">=</span> <span class="pl-c1">F</span>.<span class="pl-c1">sigmoid</span>(<span class="pl-s1">inputs</span>)
+    <span class="pl-s1">inputs</span> <span class="pl-c1">=</span> <span class="pl-s1">inputs</span>.<span class="pl-c1">view</span>(<span class="pl-c1">-</span><span class="pl-c1">1</span>)
+    <span class="pl-s1">targets</span> <span class="pl-c1">=</span> <span class="pl-s1">targets</span>.<span class="pl-c1">view</span>(<span class="pl-c1">-</span><span class="pl-c1">1</span>)
+    
+    <span class="pl-s1">intersection</span> <span class="pl-c1">=</span> (<span class="pl-s1">inputs</span> <span class="pl-c1">*</span> <span class="pl-s1">targets</span>).<span class="pl-c1">sum</span>()  <span class="pl-c"># 计算交集</span>
+    <span class="pl-s1">total</span> <span class="pl-c1">=</span> (<span class="pl-s1">inputs</span> <span class="pl-c1">+</span> <span class="pl-s1">targets</span>).<span class="pl-c1">sum</span>()         <span class="pl-c"># 计算预测和目标的像素总和</span>
+    <span class="pl-s1">union</span> <span class="pl-c1">=</span> <span class="pl-s1">total</span> <span class="pl-c1">-</span> <span class="pl-s1">intersection</span>             <span class="pl-c"># 计算并集</span>
+    
+    <span class="pl-v">IoU</span> <span class="pl-c1">=</span> (<span class="pl-s1">intersection</span> <span class="pl-c1">+</span> <span class="pl-s1">smooth</span>) <span class="pl-c1">/</span> (<span class="pl-s1">union</span> <span class="pl-c1">+</span> <span class="pl-s1">smooth</span>)  <span class="pl-c"># 计算 IoU</span>
+    <span class="pl-k">return</span> <span class="pl-c1">1</span> <span class="pl-c1">-</span> <span class="pl-v">IoU</span>  <span class="pl-c"># 返回 IoU Loss</span></pre></div>
+<hr>
+<h2>5. Focal Loss</h2>
+<h3>概念</h3>
+<p>Focal Loss 主要用于解决类别不平衡问题。它通过调整损失函数，使模型更关注难以分类的样本，减少易分类样本的贡献。Focal Loss 是对标准二元交叉熵损失 (BCE Loss) 的改进，旨在解决类别不平衡问题。类别不平衡的场景，假设负类样本数量远多于正类样本。即使单个负类样本的损失较小，但由于数量众多，它们累积起来的总损失仍然可能 dominant 训练过程，导致模型偏向于预测负类。</p>
+<h3>公式</h3>
+<p>Focal Loss 的公式为：</p>
+<p>$$
+\text{Focal Loss} = -\alpha_t (1 - p_t)^\gamma \log(p_t)
+$$</p>
+<p>其中：</p>
+<ul>
+<li>
+<p>$p_t$ 是模型预测的概率：</p>
+<ul>
+<li>对于正类 $y=1$, $p_t = p$
+</li>
+<li>对于负类 $y=0$, $p_t = 1 - p$
+</li>
+</ul>
+</li>
+<li>
+<p>$\alpha_t$ 是一个平衡因子，用于调整正负样本的权重:</p>
+<ul>
+<li>对于正类 $y=1$, $\alpha_t = \alpha$
+</li>
+<li>对于负类 $y=0$, $\alpha_t = 1-\alpha$
+</li>
+</ul>
+<p>通过设置 α &lt; 0.5，我们更大程度地降低了负类样本的损失贡献，相对地提高了正类样本的损失贡献（比如没有α 系数的时候，正负样本损失一样，如果α = 0.2，正样本的损失打2折，负样本的只打8折）。这样，模型就会更加关注数量较少的正类样本，从而更好地学习它们的特征。</p>
+</li>
+</ul>
+<div class="markdown-alert markdown-alert-note"><p class="markdown-alert-title"><svg class="octicon octicon-info mr-2" viewBox="0 0 16 16" version="1.1" width="16" height="16" aria-hidden="true"><path d="M0 8a8 8 0 1 1 16 0A8 8 0 0 1 0 8Zm8-6.5a6.5 6.5 0 1 0 0 13 6.5 6.5 0 0 0 0-13ZM6.5 7.75A.75.75 0 0 1 7.25 7h1a.75.75 0 0 1 .75.75v2.75h.25a.75.75 0 0 1 0 1.5h-2a.75.75 0 0 1 0-1.5h.25v-2h-.25a.75.75 0 0 1-.75-.75ZM8 6a1 1 0 1 1 0-2 1 1 0 0 1 0 2Z"></path></svg>Note</p><p>更直观的解释：<br>
+想象一下，你有一堆大小不一的石头，你需要把它们都搬到另一个地方。</p>
+<ul>
+<li>正类样本：是一些比较小的石头，数量很少。</li>
+<li>负类样本：是一些比较大的石头，数量很多。</li>
+</ul>
+<p>如果你直接搬运，那么你大部分时间都在搬运大石头（负类样本），而忽略了小石头（正类样本）。<br>
+现在，你使用一个“权重因子”来调整每块石头的“搬运难度”。</p>
+<p>对于小石头（正类样本），你设置的权重因子是 0.25，这意味着搬运它们的难度大大降低了（损失缩小了更多）。<br>
+对于大石头（负类样本），你设置的权重因子是 0.75，这意味着搬运它们的难度只是略微降低（损失缩小得较少）。<br>
+这样，你就会花更多的时间和精力去搬运那些原本“搬运难度”较高的小石头（正类样本），从而更好地完成任务。</p>
+</div>
+<ul>
+<li>
+<p>$\gamma$ 是一个聚焦参数，用于调整难易样本的权重。</p>
+<ul>
+<li>
+<p>对于难分类样本, $p_t$较小, $(1-p_t)^\gamma$ 接近 1，损失基本不受影响。</p>
+</li>
+<li>
+<p>对于易分类样本, $p_t$ 较大, $(1-p_t)^\gamma$ 接近 0，损失被大幅度降低。</p>
+</li>
+</ul>
+</li>
+<li>
+<p>$BCE = -[y \log(p) + (1 - y) \log(1 - p)] = -\log(p_t)$</p>
+</li>
+</ul>
+<h3>代码实现</h3>
+<div class="highlight highlight-source-python"><pre class="notranslate"><span class="pl-k">def</span> <span class="pl-en">focal_loss</span>(<span class="pl-s1">inputs</span>, <span class="pl-s1">targets</span>, <span class="pl-s1">alpha</span><span class="pl-c1">=</span><span class="pl-c1">0.25</span>, <span class="pl-s1">gamma</span><span class="pl-c1">=</span><span class="pl-c1">2</span>):
+   <span class="pl-c"># 计算 BCE Loss</span>
+    <span class="pl-c1">BCE</span> <span class="pl-c1">=</span> <span class="pl-c1">F</span>.<span class="pl-c1">binary_cross_entropy_with_logits</span>(<span class="pl-s1">inputs</span>, <span class="pl-s1">targets</span>, <span class="pl-s1">reduction</span><span class="pl-c1">=</span><span class="pl-s">'none'</span>)
+    
+    <span class="pl-c"># 计算 p_t</span>
+    <span class="pl-s1">p_t</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">exp</span>(<span class="pl-c1">-</span><span class="pl-c1">BCE</span>)
+    
+    <span class="pl-c"># 根据 targets 动态调整 alpha_t</span>
+    <span class="pl-s1">alpha_t</span> <span class="pl-c1">=</span> <span class="pl-s1">torch</span>.<span class="pl-c1">where</span>(<span class="pl-s1">targets</span> <span class="pl-c1">==</span> <span class="pl-c1">1</span>, <span class="pl-s1">alpha</span>, <span class="pl-c1">1</span> <span class="pl-c1">-</span> <span class="pl-s1">alpha</span>)
+    
+    <span class="pl-c"># 计算 Focal Loss</span>
+    <span class="pl-s1">focal_loss</span> <span class="pl-c1">=</span> <span class="pl-s1">alpha_t</span> <span class="pl-c1">*</span> (<span class="pl-c1">1</span> <span class="pl-c1">-</span> <span class="pl-s1">p_t</span>)<span class="pl-c1">**</span><span class="pl-s1">gamma</span> <span class="pl-c1">*</span> <span class="pl-c1">BCE</span>
+    
+    <span class="pl-c"># 返回均值</span>
+    <span class="pl-k">return</span> <span class="pl-s1">focal_loss</span>.<span class="pl-c1">mean</span>()</pre></div>
+<hr>
+<h2>总结</h2>
+<p>这些损失函数都是为了衡量模型预测的分割结果与真实结果之间的差异。选择哪种损失函数取决于具体的任务和数据集：</p>
+<ul>
+<li><strong>Dice Loss</strong> 和 <strong>IoU Loss</strong> 在分割任务中表现良好，尤其适合处理类别不平衡问题。</li>
+<li><strong>BCE-Dice Loss</strong> 结合了 BCE 和 Dice Loss 的优点，适用于需要同时关注像素级和区域级分割的任务。</li>
+<li><strong>Focal Loss</strong> 主要用于解决类别不平衡问题，适用于正负样本比例悬殊的场景。</li>
+</ul>
+<hr>
+<h2>Dice Loss 的直观理解</h2>
+<h3>场景</h3>
+<p>假设我们要从 X 光片中分割出肺部区域。简化模型为一个 10x10 的网格，每个格子代表一个像素。</p>
+<h4>真实情况 (Ground Truth)</h4>
+<pre class="notranslate"><code class="notranslate">0 0 0 0 0 0 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+</code></pre>
+<p>真实的肺部区域共有 <strong>20 个像素</strong>（5 行 x 4 列）。</p>
+<h4>预测 1 (较好)</h4>
+<pre class="notranslate"><code class="notranslate">0 0 0 0 0 0 0 0 0 0
+0 0 1 1 1 0 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+</code></pre>
+<ul>
+<li>交集 $|X \cap Y| = 19$（预测区域与真实区域重叠的像素数）</li>
+<li>
+$|X| = 19$（预测区域的像素数）</li>
+<li>
+$|Y| = 20$（真实区域的像素数）</li>
+<li>Dice 系数：</li>
+</ul>
+<p>$$
+DSC = \frac{2 \times |X \cap Y|}{|X| + |Y|} = \frac{2 \times 19}{19 + 20} = \frac{38}{39} \approx 0.97
+$$</p>
+<ul>
+<li>Dice Loss：</li>
+</ul>
+<p>$$
+\text{Dice Loss} = 1 - DSC = 1 - 0.97 = 0.03
+$$</p>
+<h4>预测 2 (较差)</h4>
+<pre class="notranslate"><code class="notranslate">0 0 0 0 0 0 0 0 0 0
+0 0 0 0 1 0 0 0 0 0
+0 0 0 1 1 0 0 0 0 0
+0 0 1 1 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 1 0 0 0 0 0 0
+0 0 1 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+</code></pre>
+<ul>
+<li>交集 $|X \cap Y| = 5$（预测区域与真实区域重叠的像素数）</li>
+<li>
+$|X| = 7$（预测区域的像素数）</li>
+<li>
+$|Y| = 20$（真实区域的像素数）</li>
+<li>Dice 系数：</li>
+</ul>
+<p>$$
+DSC = \frac{2 \times |X \cap Y|}{|X| + |Y|} = \frac{2 \times 5}{7 + 20} = \frac{10}{27} \approx 0.37
+$$</p>
+<ul>
+<li>Dice Loss：</li>
+</ul>
+<p>$$
+\text{Dice Loss} = 1 - DSC = 1 - 0.37 = 0.63
+$$</p>
+<h3>结论</h3>
+<ul>
+<li><strong>预测 1</strong> 的 Dice 系数更高（0.97），Dice Loss 更低（0.03），表明预测更接近真实情况。</li>
+<li><strong>预测 2</strong> 的 Dice 系数较低（0.37），Dice Loss 较高（0.63），表明预测与真实情况差距较大。</li>
+</ul>
+<hr>
+<h2>IoU Loss 的直观理解</h2>
+<h3>场景</h3>
+<p>继续使用修正后的肺部区域（20 个像素）。</p>
+<h4>预测 1 (较好)</h4>
+<ul>
+<li>交集 $|X \cap Y| = 19$
+</li>
+<li>并集 $|X \cup Y| = |X| + |Y| - |X \cap Y| = 19 + 20 - 19 = 20$
+</li>
+<li>IoU：</li>
+</ul>
+<p>$$
+IoU = \frac{|X \cap Y|}{|X \cup Y|} = \frac{19}{20} = 0.95
+$$</p>
+<ul>
+<li>IoU Loss：</li>
+</ul>
+<p>$$
+\text{IoU Loss} = 1 - IoU = 1 - 0.95 = 0.05
+$$</p>
+<h4>预测 2 (较差)</h4>
+<ul>
+<li>交集 $|X \cap Y| = 5$
+</li>
+<li>并集 $|X \cup Y| = |X| + |Y| - |X \cap Y| = 7 + 20 - 5 = 22$
+</li>
+<li>IoU：</li>
+</ul>
+<p>$$
+IoU = \frac{|X \cap Y|}{|X \cup Y|} = \frac{5}{22} \approx 0.23
+$$</p>
+<ul>
+<li>IoU Loss：</li>
+</ul>
+<p>$$
+\text{IoU Loss} = 1 - IoU = 1 - 0.23 = 0.77
+$$</p>
+<h3>结论</h3>
+<ul>
+<li><strong>预测 1</strong> 的 IoU 更高（0.95），IoU Loss 更低（0.05），表明预测更接近真实情况。</li>
+<li><strong>预测 2</strong> 的 IoU 较低（0.23），IoU Loss 较高（0.77），表明预测与真实情况差距较大。</li>
+</ul>
+<hr>
+<h2>BCE Loss 的直观理解</h2>
+<h3>场景</h3>
+<p>继续使用肺部 X 光片分割的例子，假设肺部区域只占图像的一小部分，背景占绝大多数。</p>
+<h4>真实情况 (Ground Truth)</h4>
+<pre class="notranslate"><code class="notranslate">0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 1 0 0 0 0 0
+0 0 0 1 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 1 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+</code></pre>
+<p>只有 <strong>3 个像素</strong>是肺部区域（1），其余 <strong>97 个像素</strong>是背景（0）。</p>
+<h4>预测概率</h4>
+<p>假设模型的输出经过 Sigmoid 激活后，得到以下预测概率：</p>
+<pre class="notranslate"><code class="notranslate">0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.9 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.8 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.9 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+</code></pre>
+<ul>
+<li>对于正类（肺部区域），预测概率较高（如 0.9、0.8）。</li>
+<li>对于负类（背景区域），预测概率较低（如 0.1）。</li>
+</ul>
+<h3>逐像素计算损失</h3>
+<p>我们选取几个有代表性的像素来说明 BCE Loss 的计算过程。</p>
+<ol>
+<li>
+<strong>正类像素$y = 1$</strong>：
+<ul>
+<li>真实标签：$y = 1$</li>
+<li>预测概率：$p = 0.9$</li>
+<li>损失：</li>
+</ul>
+</li>
+</ol>
+<p>$$
+L(1, 0.9) = -[1 \cdot \log(0.9) + 0 \cdot \log(0.1)] \approx 0.105
+$$</p>
+<ol start="2">
+<li>
+<strong>负类像素$y = 0$</strong>：
+<ul>
+<li>真实标签：$y = 0$</li>
+<li>预测概率：$p = 0.1$</li>
+<li>损失：</li>
+</ul>
+</li>
+</ol>
+<p>$$
+L(0, 0.1) = -[0 \cdot \log(0.1) + 1 \cdot \log(0.9)] \approx 0.105
+$$</p>
+<ol start="3">
+<li>
+<strong>错误预测的像素</strong>：
+<ul>
+<li>真实标签：$y = 0$</li>
+<li>预测概率：$p = 0.8$</li>
+<li>损失：</li>
+</ul>
+</li>
+</ol>
+<p>$$
+L(0, 0.8) = -[0 \cdot \log(0.8) + 1 \cdot \log(0.2)] \approx 1.609
+$$</p>
+<h3>总 BCE Loss</h3>
+<p>假设所有像素的损失计算如下：</p>
+<ul>
+<li>正类像素（3 个）：每个损失约为 0.105。</li>
+<li>负类像素（97 个）：每个损失约为 0.105。</li>
+<li>错误预测的像素（假设有 5 个）：每个损失约为 1.609。</li>
+</ul>
+<p>则总 BCE Loss 为：</p>
+<p>$$
+\text{BCE Loss} = \frac{3 \times 0.105 + 97 \times 0.105 + 5 \times 1.609}{100} \approx 0.186
+$$</p>
+<hr>
+<h2>Focal Loss 的直观理解</h2>
+<h3>场景</h3>
+<p>我们继续用之前的肺部X光片分割例子，来解释Focal Loss。不过，要完全体现Focal Loss的优势，需要考虑类别不平衡的情况。在之前的例子中，我们假设肺部区域占了图像的相当一部分。现在，我们假设肺部区域只占图像的一小部分，这样背景（非肺部区域）就占了绝大多数，这就构成了类别不平衡。</p>
+<p>我们可以重新使用肺部检测的例子，结合 <strong>Focal Loss</strong> 的更新公式，并固定 $\alpha = 0.5$，以便更清晰地观察 $(1 - p_t)^\gamma$ 的效果。让我们重新梳理并计算。</p>
+<hr>
+<h2>场景回顾</h2>
+<h3>真实情况 (Ground Truth)</h3>
+<p>假设我们有一个 10x10 的网格，肺部区域用 <code class="notranslate">1</code> 表示，背景用 <code class="notranslate">0</code> 表示：</p>
+<pre class="notranslate"><code class="notranslate">0 0 0 0 0 0 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 1 1 1 1 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+0 0 0 0 0 0 0 0 0 0
+</code></pre>
+<p>真实的肺部区域共有 <strong>20 个像素</strong>（5 行 x 4 列）。</p>
+<h3>预测概率</h3>
+<p>假设模型的输出经过 Sigmoid 激活后，得到以下预测概率：</p>
+<pre class="notranslate"><code class="notranslate">0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.9 0.8 0.7 0.6 0.1 0.1 0.1 0.1
+0.1 0.1 0.8 0.9 0.8 0.7 0.1 0.1 0.1 0.1
+0.1 0.1 0.7 0.8 0.9 0.8 0.1 0.1 0.1 0.1
+0.1 0.1 0.6 0.7 0.8 0.9 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1 0.1
+</code></pre>
+<ul>
+<li>对于正类（肺部区域），预测概率较高（如 0.9、0.8）。</li>
+<li>对于负类（背景区域），预测概率较低（如 0.1）。</li>
+</ul>
+<h3>Focal Loss 的公式：</h3>
+<p>$$
+FL(p_t) = \alpha_t (1 - p_t)^\gamma \cdot \text{BCE}
+$$</p>
+<h3>示例计算</h3>
+<h4>1. 正类样本$y = 1$</h4>
+<ul>
+<li>
+<p>预测概率：$p = 0.9$</p>
+</li>
+<li>
+<p>BCE Loss：</p>
+</li>
+</ul>
+<p>$$
+\text{BCE} = -\log(0.9) \approx 0.105
+$$</p>
+<ul>
+<li>
+$p_t$：</li>
+</ul>
+<p>$$
+p_t = \exp(-0.105) \approx 0.9
+$$</p>
+<ul>
+<li>Focal Loss：</li>
+</ul>
+<p>$$
+FL = 0.5 \times (1 - 0.9)^2 \times 0.105 \approx 0.00053
+$$</p>
+<h4>2. 负类样本$y = 0$</h4>
+<ul>
+<li>
+<p>预测概率：$p = 0.1$</p>
+</li>
+<li>
+<p>BCE Loss：</p>
+</li>
+</ul>
+<p>$$
+\text{BCE} = -\log(1 - 0.1) \approx 0.105
+$$</p>
+<ul>
+<li>
+$p_t$：</li>
+</ul>
+<p>$$
+p_t = \exp(-0.105) \approx 0.9
+$$</p>
+<ul>
+<li>Focal Loss：</li>
+</ul>
+<p>$$
+FL = 0.5 \times (1 - 0.9)^2 \times 0.105 \approx 0.00053
+$$</p>
+<h4>3. 难分类的正样本$y = 1$</h4>
+<ul>
+<li>
+<p>预测概率：$p = 0.6$</p>
+</li>
+<li>
+<p>BCE Loss：</p>
+</li>
+</ul>
+<p>$$
+\text{BCE} = -\log(0.6) \approx 0.511
+$$</p>
+<ul>
+<li>
+$p_t$：</li>
+</ul>
+<p>$$
+p_t = \exp(-0.511) \approx 0.6
+$$</p>
+<ul>
+<li>Focal Loss：</li>
+</ul>
+<p>$$
+FL = 0.5 \times (1 - 0.6)^2 \times 0.511 \approx 0.041
+$$</p>
+<h4>4. 难分类的负样本$y = 0$</h4>
+<ul>
+<li>
+<p>预测概率：$p = 0.4$</p>
+</li>
+<li>
+<p>BCE Loss：</p>
+</li>
+</ul>
+<p>$$
+\text{BCE} = -\log(1 - 0.4) \approx 0.511
+$$</p>
+<ul>
+<li>
+$p_t$：</li>
+</ul>
+<p>$$
+p_t = \exp(-0.511) \approx 0.6
+$$</p>
+<ul>
+<li>Focal Loss：</li>
+</ul>
+<p>$$
+FL = 0.5 \times (1 - 0.6)^2 \times 0.511 \approx 0.041
+$$</p>
+<h3>对比结果</h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th>样本类型</th>
+<th>$alpha_t$</th>
+<th>BCE Loss</th>
+<th>Focal Loss</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>正类（易分类）</td>
+<td>0.5</td>
+<td>0.105</td>
+<td>0.00053</td>
+</tr>
+<tr>
+<td>负类（易分类）</td>
+<td>0.5</td>
+<td>0.105</td>
+<td>0.00053</td>
+</tr>
+<tr>
+<td>正类（难分类）</td>
+<td>0.5</td>
+<td>0.511</td>
+<td>0.041</td>
+</tr>
+<tr>
+<td>负类（难分类）</td>
+<td>0.5</td>
+<td>0.511</td>
+<td>0.041</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h3>结论</h3>
+<ul>
+<li>
+<strong>Focal Loss</strong> 通过 $(1 - p_t)^\gamma$ 项显著降低了易分类样本的损失贡献（如易分类的正样本从 0.105 降到 0.00053）。</li>
+<li>
+<strong>Focal Loss</strong> 对难分类样本的损失贡献也有所降低，但降低的幅度相对较小（如难分类的正样本从 0.511 降到 0.041）。</li>
+<li>
+<strong>Focal Loss</strong> 通过$\alpha_t$ 动态调整正负样本的权重，解决了类别不平衡问题。</li>
+</ul></div>
+<div style="font-size:small;margin-top:8px;float:right;"></div>
+
+<button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
+<div class="comments" id="comments"></div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://leadtechinterview.github.io">Lead Tech Interview</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行"+diffDay+"天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z', 'copy': 'M0 6.75C0 5.784.784 5 1.75 5h1.5a.75.75 0 0 1 0 1.5h-1.5a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-1.5a.75.75 0 0 1 1.5 0v1.5A1.75 1.75 0 0 1 9.25 16h-7.5A1.75 1.75 0 0 1 0 14.25Z M5 1.75C5 .784 5.784 0 6.75 0h7.5C15.216 0 16 .784 16 1.75v7.5A1.75 1.75 0 0 1 14.25 11h-7.5A1.75 1.75 0 0 1 5 9.25Zm1.75-.25a.25.25 0 0 0-.25.25v7.5c0 .138.112.25.25.25h7.5a.25.25 0 0 0 .25-.25v-7.5a.25.25 0 0 0-.25-.25Z', 'check': 'M13.78 4.22a.75.75 0 0 1 0 1.06l-7.25 7.25a.75.75 0 0 1-1.06 0L2.22 9.28a.751.751 0 0 1 .018-1.042.751.751 0 0 1 1.042-.018L6 10.94l6.72-6.72a.75.75 0 0 1 1.06 0Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+function openComments(){
+    cm=document.getElementById("comments");
+    cmButton=document.getElementById("cmButton");
+    cmButton.innerHTML="loading";
+    span=document.createElement("span");
+    span.setAttribute("class","AnimatedEllipsis");
+    cmButton.appendChild(span);
+
+    script=document.createElement("script");
+    script.setAttribute("src","https://utteranc.es/client.js");
+    script.setAttribute("repo","LeadTechInterview/leadtechinterview.github.io");
+    script.setAttribute("issue-term","title");
+    
+    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
+    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
+    else{script.setAttribute("theme","preferred-color-scheme");}
+    
+    script.setAttribute("crossorigin","anonymous");
+    script.setAttribute("async","");
+    cm.appendChild(script);
+
+    int=self.setInterval("iFrameLoading()",200);
+}
+
+function iFrameLoading(){
+    var utterances=document.getElementsByClassName('utterances');
+    if(utterances.length==1){
+        if(utterances[0].style.height!=""){
+            utterancesLoad=1;
+            int=window.clearInterval(int);
+            document.getElementById("cmButton").style.display="none";
+            console.log("utterances Load OK");
+        }
+    }
+}
+
+document.addEventListener('DOMContentLoaded', () => {
+    const createClipboardHTML = (codeContent, additionalClasses = '') => `
+        <pre class="notranslate"><code class="notranslate">${codeContent}</code></pre>
+        <div class="clipboard-container position-absolute right-0 top-0 ${additionalClasses}">
+            <clipboard-copy class="ClipboardButton btn m-2 p-0" role="button" style="display: inherit;">
+                <svg height="16" width="16" class="octicon octicon-copy m-2"><path d="${IconList["copy"]}"></path></svg>
+                <svg height="16" width="16" class="octicon octicon-check color-fg-success m-2 d-none"><path d="${IconList["check"]}"></path></svg>
+            </clipboard-copy>
+            <div class="copy-feedback">Copied!</div>
+        </div>
+    `;
+
+    const handleCodeElements = (selector = '') => {
+        document.querySelectorAll(selector).forEach(codeElement => {
+            const codeContent = codeElement.innerHTML;
+            const newStructure = document.createElement('div');
+            newStructure.className = 'snippet-clipboard-content position-relative overflow-auto';
+            newStructure.innerHTML = createClipboardHTML(codeContent);
+
+            const parentElement = codeElement.parentElement;
+            if (selector.includes('highlight')) {
+                parentElement.insertBefore(newStructure, codeElement.nextSibling);
+                parentElement.removeChild(codeElement);
+            } else {
+                parentElement.parentElement.replaceChild(newStructure, parentElement);
+            }
+        });
+    };
+
+    handleCodeElements('pre.notranslate > code.notranslate');
+    handleCodeElements('div.highlight > pre.notranslate');
+
+    let currentFeedback = null;
+    document.querySelectorAll('clipboard-copy').forEach(copyButton => {
+        copyButton.addEventListener('click', () => {
+            const codeContent = copyButton.closest('.snippet-clipboard-content').innerText;
+            const tempTextArea = document.createElement('textarea');
+            tempTextArea.value = codeContent;
+            document.body.appendChild(tempTextArea);
+            tempTextArea.select();
+            document.execCommand('copy');
+            document.body.removeChild(tempTextArea);
+
+            const copyIcon = copyButton.querySelector('.octicon-copy');
+            const checkIcon = copyButton.querySelector('.octicon-check');
+            const copyFeedback = copyButton.nextElementSibling;
+
+            if (currentFeedback && currentFeedback !== copyFeedback) {currentFeedback.style.display = 'none';}
+            currentFeedback = copyFeedback;
+
+            copyIcon.classList.add('d-none');
+            checkIcon.classList.remove('d-none');
+            copyFeedback.style.display = 'block';
+            copyButton.style.borderColor = 'var(--color-success-fg)';
+
+            setTimeout(() => {
+                copyIcon.classList.remove('d-none');
+                checkIcon.classList.add('d-none');
+                copyFeedback.style.display = 'none';
+                copyButton.style.borderColor = '';
+            }, 2000);
+        });
+    });
+});
+
+</script>
+<script src='https://blog.meekdai.com/Gmeek/plugins/GmeekTOC.js'></script><script>MathJax = {tex: {inlineMath: [["$", "$"]]}};</script><script async src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+
+</html>
