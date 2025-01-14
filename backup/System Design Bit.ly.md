@@ -68,6 +68,8 @@ QPS:
 - 100M writes per day, 100M / 100k = 1k QPS 
 - 100M x 10 reads per day, 10k QPS
 
+Split into read/write services
+
 record size:
 - original url (100 bytes)
 - short url (50 bytes)
@@ -82,5 +84,7 @@ storage (1 year)
 we can use nosql db  like DynamoDB which can:
 - easily handle ~1k writes/sec and ~10k reads/sec.
 - scales horizontally with sharding and replication.
+
+![image](https://github.com/user-attachments/assets/2b479030-1436-4fd8-b625-0fae2cfc446e)
 
 

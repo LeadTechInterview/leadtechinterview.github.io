@@ -80,6 +80,8 @@ QPS:
 - 100M writes per day, 100M / 100k = 1k QPS 
 - 100M x 10 reads per day, 10k QPS
 
+Split into read/write services
+
 record size:
 - original url (100 bytes)
 - short url (50 bytes)
@@ -94,6 +96,8 @@ storage (1 year)
 we can use nosql db  like DynamoDB which can:
 - easily handle ~1k writes/sec and ~10k reads/sec.
 - scales horizontally with sharding and replication.
+
+![image](https://github.com/user-attachments/assets/2b479030-1436-4fd8-b625-0fae2cfc446e)
 
 
 。">
@@ -168,6 +172,8 @@ QPS:
 - 100M writes per day, 100M / 100k = 1k QPS 
 - 100M x 10 reads per day, 10k QPS
 
+Split into read/write services
+
 record size:
 - original url (100 bytes)
 - short url (50 bytes)
@@ -182,6 +188,8 @@ storage (1 year)
 we can use nosql db  like DynamoDB which can:
 - easily handle ~1k writes/sec and ~10k reads/sec.
 - scales horizontally with sharding and replication.
+
+![image](https://github.com/user-attachments/assets/2b479030-1436-4fd8-b625-0fae2cfc446e)
 
 
 。">
@@ -311,6 +319,7 @@ input:</li>
 <li>100M writes per day, 100M / 100k = 1k QPS</li>
 <li>100M x 10 reads per day, 10k QPS</li>
 </ul>
+<p>Split into read/write services</p>
 <p>record size:</p>
 <ul>
 <li>original url (100 bytes)</li>
@@ -328,7 +337,8 @@ total ~ 200 bytes</li>
 <ul>
 <li>easily handle ~1k writes/sec and ~10k reads/sec.</li>
 <li>scales horizontally with sharding and replication.</li>
-</ul></div>
+</ul>
+<p><a target="_blank" rel="noopener noreferrer" href="https://github.com/user-attachments/assets/2b479030-1436-4fd8-b625-0fae2cfc446e"><img src="https://github.com/user-attachments/assets/2b479030-1436-4fd8-b625-0fae2cfc446e" alt="image" style="max-width: 100%;"></a></p></div>
 <div style="font-size:small;margin-top:8px;float:right;"></div>
 
 <button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
