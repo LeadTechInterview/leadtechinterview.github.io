@@ -1,0 +1,517 @@
+<!DOCTYPE html>
+<html data-color-mode="light" data-dark-theme="dark" data-light-theme="light" lang="zh-CN">
+<head>
+    <meta content="text/html; charset=utf-8" http-equiv="content-type" />
+    <meta name="viewport" content="width=device-width,initial-scale=1.0">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <link href='https://mirrors.sustech.edu.cn/cdnjs/ajax/libs/Primer/21.0.7/primer.css' rel='stylesheet' />
+    <script src='https://blog.meekdai.com/Gmeek/plugins/GmeekVercount.js'></script>
+    <link rel="icon" href="https://github.githubassets.com/favicons/favicon.svg"><script>
+        let theme = localStorage.getItem("meek_theme") || "light";
+        document.documentElement.setAttribute("data-color-mode", theme);
+    </script>
+<meta name="description" content="## 1. **Database Selection by QPS (Read vs Write)**
+
+| **QPS Range**         | **Type of Database**                  | **Examples**                      | **Scaling Techniques**             |
+|-----------------------|---------------------------------------|-----------------------------------|------------------------------------|
+| **Low (<1,000)**      | Relational / Document DB              | MySQL, PostgreSQL, MongoDB        | Vertical scaling, Caching         |
+| **Medium (1k–10k)**   | Relational (tuned) / Document DB      | MySQL + Replicas, DynamoDB        | Read replicas, Caching, Indexing  |
+| **High (10k–1M)**     | Distributed NoSQL                     | Cassandra, DynamoDB, Bigtable     | Sharding, Horizontal scaling      |
+| **Extreme (>1M)**     | Distributed In-memory / Advanced DB   | Redis, CockroachDB, Spanner       | Sharding, Partitioning, CDNs      |
+
+---
+
+## 2. **Mainstream Database QPS Capacity (Read vs Write)**
+
+| **Database Type**      | **Database**            | **Read QPS (Per Node)**            | **Write QPS (Per Node)**           |
+|------------------------|-------------------------|------------------------------------|------------------------------------|
+| **Relational DB**       | MySQL, PostgreSQL       | 2k–10k QPS (optimized for reads)  | 500–2k QPS (write-optimized)      |
+| **Document DB**         | MongoDB                 | 5k–20k QPS (tuned for reads)      | 1k–5k QPS (write-heavy)           |
+| **Wide-Column Store**   | Cassandra               | 10k–50k QPS (cluster optimized)   | 5k–20k QPS (write-optimized)      |
+| **Key-Value Store**     | Redis                   | 100k–1M QPS (in-memory optimized) | 100k–1M QPS (write-intensive)     |
+| **Time-Series DB**      | InfluxDB                | 50k–500k QPS                      | 10k–50k QPS                       |
+| **Distributed SQL**     | CockroachDB             | 10k–50k QPS                       | 2k–10k QPS                        |
+| **Search Engines**      | Elasticsearch           | 1k–20k QPS (query-dependent)      | 500–5k QPS (write-intense)        |
+
+---
+
+## 3. **Sharding and Scaling: When and Why**
+
+### **Key Indicators for Sharding**:
+
+| **Condition**              | **Indicators**                                                             | **Action**                               |
+|----------------------------|---------------------------------------------------------------------------|------------------------------------------|
+| **Data Volume**             | Storage exceeds capacity of a single node or disk.                        | Use **sharding** when storage exceeds ~500GB–1TB per node. |
+| **High Write Throughput**   | Write latency increases due to bottlenecks.                               | Shard by write-heavy keys (>5k–10k writes/sec). |
+| **Read/Write Latency**      | Latency exceeds acceptable thresholds.                                   | Partition data, shard for high loads.    |
+| **Data Hotspotting**        | Some partitions/shards receive disproportionate traffic.                 | Implement **sharding** to balance load across nodes. |
+| **Query Performance**       | Queries are slow due to large tables.                                     | Use **partitioning** to improve query performance. |
+
+---
+
+## 4. **Other Scaling Concepts to Consider**
+
+### **1. Load Balancing**
+
+| **Concept**               | **Description**                                                          | **Techniques**                      |
+|---------------------------|--------------------------------------------------------------------------|-------------------------------------|
+| **Load Balancing**         | Distribute incoming traffic across multiple servers to ensure reliability and prevent overload. | **Round-robin**, **Least Connections**, **Weighted balancing** using **NGINX**, **HAProxy**, **AWS ELB**. |
+
+### **2.  Fault Tolerance, CAP Theorem**
+
+| **Concept**               | **Description**                                                          | **Techniques**                      |
+|---------------------------|--------------------------------------------------------------------------|-------------------------------------|
+| **Fault Tolerance**        | Ensuring that the system remains operational even if some components fail. | **Replication**, **Consensus algorithms** (e.g., **Paxos**, **Raft**), **Failover** systems. |
+| **CAP Theorem**            | A distributed system can only guarantee **two** of the following: **Consistency**, **Availability**, or **Partition Tolerance**. | Choose between **eventual consistency** or **strong consistency** depending on system requirements. |
+| **Eventual Consistency**   | Allowing data to propagate slowly across nodes, often used in **NoSQL** databases. | Use **CRDTs**, **Event sourcing**, **CQRS**, **Tunable consistency**. |
+| **Data Replication**       | Duplication of data across nodes to ensure high availability and fault tolerance. | Use **Master-Slave replication**, **Multi-region replication**. |
+
+### **3. Queues and Asynchronous Processing**
+
+| **Concept**               | **Description**                                                          | **Techniques**                      |
+|---------------------------|--------------------------------------------------------------------------|-------------------------------------|
+| **Asynchronous Processing** | Offloading long-running tasks to background jobs for better system responsiveness. | **Message queues** like **RabbitMQ**, **Kafka**, **Amazon SQS**, **Job schedulers**. |
+| **Event-driven Architectures** | Architecting systems to react to events in real-time. | Use **Event-driven systems** with **publish-subscribe** models. |
+
+### **4. Auto-Scaling and Elastic Infrastructure**
+
+### **5. Global Distribution & Multi-Region Deployment**
+。">
+<meta property="og:title" content="System Design Scaling Cheat Sheet">
+<meta property="og:description" content="## 1. **Database Selection by QPS (Read vs Write)**
+
+| **QPS Range**         | **Type of Database**                  | **Examples**                      | **Scaling Techniques**             |
+|-----------------------|---------------------------------------|-----------------------------------|------------------------------------|
+| **Low (<1,000)**      | Relational / Document DB              | MySQL, PostgreSQL, MongoDB        | Vertical scaling, Caching         |
+| **Medium (1k–10k)**   | Relational (tuned) / Document DB      | MySQL + Replicas, DynamoDB        | Read replicas, Caching, Indexing  |
+| **High (10k–1M)**     | Distributed NoSQL                     | Cassandra, DynamoDB, Bigtable     | Sharding, Horizontal scaling      |
+| **Extreme (>1M)**     | Distributed In-memory / Advanced DB   | Redis, CockroachDB, Spanner       | Sharding, Partitioning, CDNs      |
+
+---
+
+## 2. **Mainstream Database QPS Capacity (Read vs Write)**
+
+| **Database Type**      | **Database**            | **Read QPS (Per Node)**            | **Write QPS (Per Node)**           |
+|------------------------|-------------------------|------------------------------------|------------------------------------|
+| **Relational DB**       | MySQL, PostgreSQL       | 2k–10k QPS (optimized for reads)  | 500–2k QPS (write-optimized)      |
+| **Document DB**         | MongoDB                 | 5k–20k QPS (tuned for reads)      | 1k–5k QPS (write-heavy)           |
+| **Wide-Column Store**   | Cassandra               | 10k–50k QPS (cluster optimized)   | 5k–20k QPS (write-optimized)      |
+| **Key-Value Store**     | Redis                   | 100k–1M QPS (in-memory optimized) | 100k–1M QPS (write-intensive)     |
+| **Time-Series DB**      | InfluxDB                | 50k–500k QPS                      | 10k–50k QPS                       |
+| **Distributed SQL**     | CockroachDB             | 10k–50k QPS                       | 2k–10k QPS                        |
+| **Search Engines**      | Elasticsearch           | 1k–20k QPS (query-dependent)      | 500–5k QPS (write-intense)        |
+
+---
+
+## 3. **Sharding and Scaling: When and Why**
+
+### **Key Indicators for Sharding**:
+
+| **Condition**              | **Indicators**                                                             | **Action**                               |
+|----------------------------|---------------------------------------------------------------------------|------------------------------------------|
+| **Data Volume**             | Storage exceeds capacity of a single node or disk.                        | Use **sharding** when storage exceeds ~500GB–1TB per node. |
+| **High Write Throughput**   | Write latency increases due to bottlenecks.                               | Shard by write-heavy keys (>5k–10k writes/sec). |
+| **Read/Write Latency**      | Latency exceeds acceptable thresholds.                                   | Partition data, shard for high loads.    |
+| **Data Hotspotting**        | Some partitions/shards receive disproportionate traffic.                 | Implement **sharding** to balance load across nodes. |
+| **Query Performance**       | Queries are slow due to large tables.                                     | Use **partitioning** to improve query performance. |
+
+---
+
+## 4. **Other Scaling Concepts to Consider**
+
+### **1. Load Balancing**
+
+| **Concept**               | **Description**                                                          | **Techniques**                      |
+|---------------------------|--------------------------------------------------------------------------|-------------------------------------|
+| **Load Balancing**         | Distribute incoming traffic across multiple servers to ensure reliability and prevent overload. | **Round-robin**, **Least Connections**, **Weighted balancing** using **NGINX**, **HAProxy**, **AWS ELB**. |
+
+### **2.  Fault Tolerance, CAP Theorem**
+
+| **Concept**               | **Description**                                                          | **Techniques**                      |
+|---------------------------|--------------------------------------------------------------------------|-------------------------------------|
+| **Fault Tolerance**        | Ensuring that the system remains operational even if some components fail. | **Replication**, **Consensus algorithms** (e.g., **Paxos**, **Raft**), **Failover** systems. |
+| **CAP Theorem**            | A distributed system can only guarantee **two** of the following: **Consistency**, **Availability**, or **Partition Tolerance**. | Choose between **eventual consistency** or **strong consistency** depending on system requirements. |
+| **Eventual Consistency**   | Allowing data to propagate slowly across nodes, often used in **NoSQL** databases. | Use **CRDTs**, **Event sourcing**, **CQRS**, **Tunable consistency**. |
+| **Data Replication**       | Duplication of data across nodes to ensure high availability and fault tolerance. | Use **Master-Slave replication**, **Multi-region replication**. |
+
+### **3. Queues and Asynchronous Processing**
+
+| **Concept**               | **Description**                                                          | **Techniques**                      |
+|---------------------------|--------------------------------------------------------------------------|-------------------------------------|
+| **Asynchronous Processing** | Offloading long-running tasks to background jobs for better system responsiveness. | **Message queues** like **RabbitMQ**, **Kafka**, **Amazon SQS**, **Job schedulers**. |
+| **Event-driven Architectures** | Architecting systems to react to events in real-time. | Use **Event-driven systems** with **publish-subscribe** models. |
+
+### **4. Auto-Scaling and Elastic Infrastructure**
+
+### **5. Global Distribution & Multi-Region Deployment**
+。">
+<meta property="og:type" content="article">
+<meta property="og:url" content="https://leadtechinterview.github.io/post/System%20Design%20Scaling%20Cheat%20Sheet.html">
+<meta property="og:image" content="https://github.githubassets.com/favicons/favicon.svg">
+<title>System Design Scaling Cheat Sheet</title>
+
+
+
+</head>
+<style>
+body{box-sizing: border-box;min-width: 200px;max-width: 900px;margin: 20px auto;padding: 45px;font-size: 16px;font-family: sans-serif;line-height: 1.25;}
+#header{display:flex;padding-bottom:8px;border-bottom: 1px solid var(--borderColor-muted, var(--color-border-muted));margin-bottom: 16px;}
+#footer {margin-top:64px; text-align: center;font-size: small;}
+
+</style>
+
+<style>
+.postTitle{margin: auto 0;font-size:40px;font-weight:bold;}
+.title-right{display:flex;margin:auto 0 0 auto;}
+.title-right .circle{padding: 14px 16px;margin-right:8px;}
+#postBody{border-bottom: 1px solid var(--color-border-default);padding-bottom:36px;}
+#postBody hr{height:2px;}
+#cmButton{height:48px;margin-top:48px;}
+#comments{margin-top:64px;}
+.g-emoji{font-size:24px;}
+@media (max-width: 600px) {
+    body {padding: 8px;}
+    .postTitle{font-size:24px;}
+}
+
+</style>
+
+
+
+
+<body>
+    <div id="header">
+<h1 class="postTitle">System Design Scaling Cheat Sheet</h1>
+<div class="title-right">
+    <a href="https://leadtechinterview.github.io" id="buttonHome" class="btn btn-invisible circle" title="首页">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathHome" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+    <a href="https://github.com/LeadTechInterview/leadtechinterview.github.io/issues/13" target="_blank" class="btn btn-invisible circle" title="Issue">
+        <svg class="octicon" width="16" height="16">
+            <path id="pathIssue" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+    
+
+    <a class="btn btn-invisible circle" onclick="modeSwitch();" title="切换主题">
+        <svg class="octicon" width="16" height="16" >
+            <path id="themeSwitch" fill-rule="evenodd"></path>
+        </svg>
+    </a>
+
+</div>
+</div>
+    <div id="content">
+<div class="markdown-body" id="postBody"><h2>1. <strong>Database Selection by QPS (Read vs Write)</strong></h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th><strong>QPS Range</strong></th>
+<th><strong>Type of Database</strong></th>
+<th><strong>Examples</strong></th>
+<th><strong>Scaling Techniques</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Low (&lt;1,000)</strong></td>
+<td>Relational / Document DB</td>
+<td>MySQL, PostgreSQL, MongoDB</td>
+<td>Vertical scaling, Caching</td>
+</tr>
+<tr>
+<td><strong>Medium (1k–10k)</strong></td>
+<td>Relational (tuned) / Document DB</td>
+<td>MySQL + Replicas, DynamoDB</td>
+<td>Read replicas, Caching, Indexing</td>
+</tr>
+<tr>
+<td><strong>High (10k–1M)</strong></td>
+<td>Distributed NoSQL</td>
+<td>Cassandra, DynamoDB, Bigtable</td>
+<td>Sharding, Horizontal scaling</td>
+</tr>
+<tr>
+<td><strong>Extreme (&gt;1M)</strong></td>
+<td>Distributed In-memory / Advanced DB</td>
+<td>Redis, CockroachDB, Spanner</td>
+<td>Sharding, Partitioning, CDNs</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<hr>
+<h2>2. <strong>Mainstream Database QPS Capacity (Read vs Write)</strong></h2>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th><strong>Database Type</strong></th>
+<th><strong>Database</strong></th>
+<th><strong>Read QPS (Per Node)</strong></th>
+<th><strong>Write QPS (Per Node)</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Relational DB</strong></td>
+<td>MySQL, PostgreSQL</td>
+<td>2k–10k QPS (optimized for reads)</td>
+<td>500–2k QPS (write-optimized)</td>
+</tr>
+<tr>
+<td><strong>Document DB</strong></td>
+<td>MongoDB</td>
+<td>5k–20k QPS (tuned for reads)</td>
+<td>1k–5k QPS (write-heavy)</td>
+</tr>
+<tr>
+<td><strong>Wide-Column Store</strong></td>
+<td>Cassandra</td>
+<td>10k–50k QPS (cluster optimized)</td>
+<td>5k–20k QPS (write-optimized)</td>
+</tr>
+<tr>
+<td><strong>Key-Value Store</strong></td>
+<td>Redis</td>
+<td>100k–1M QPS (in-memory optimized)</td>
+<td>100k–1M QPS (write-intensive)</td>
+</tr>
+<tr>
+<td><strong>Time-Series DB</strong></td>
+<td>InfluxDB</td>
+<td>50k–500k QPS</td>
+<td>10k–50k QPS</td>
+</tr>
+<tr>
+<td><strong>Distributed SQL</strong></td>
+<td>CockroachDB</td>
+<td>10k–50k QPS</td>
+<td>2k–10k QPS</td>
+</tr>
+<tr>
+<td><strong>Search Engines</strong></td>
+<td>Elasticsearch</td>
+<td>1k–20k QPS (query-dependent)</td>
+<td>500–5k QPS (write-intense)</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<hr>
+<h2>3. <strong>Sharding and Scaling: When and Why</strong></h2>
+<h3><strong>Key Indicators for Sharding</strong>:</h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th><strong>Condition</strong></th>
+<th><strong>Indicators</strong></th>
+<th><strong>Action</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Data Volume</strong></td>
+<td>Storage exceeds capacity of a single node or disk.</td>
+<td>Use <strong>sharding</strong> when storage exceeds ~500GB–1TB per node.</td>
+</tr>
+<tr>
+<td><strong>High Write Throughput</strong></td>
+<td>Write latency increases due to bottlenecks.</td>
+<td>Shard by write-heavy keys (&gt;5k–10k writes/sec).</td>
+</tr>
+<tr>
+<td><strong>Read/Write Latency</strong></td>
+<td>Latency exceeds acceptable thresholds.</td>
+<td>Partition data, shard for high loads.</td>
+</tr>
+<tr>
+<td><strong>Data Hotspotting</strong></td>
+<td>Some partitions/shards receive disproportionate traffic.</td>
+<td>Implement <strong>sharding</strong> to balance load across nodes.</td>
+</tr>
+<tr>
+<td><strong>Query Performance</strong></td>
+<td>Queries are slow due to large tables.</td>
+<td>Use <strong>partitioning</strong> to improve query performance.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<hr>
+<h2>4. <strong>Other Scaling Concepts to Consider</strong></h2>
+<h3><strong>1. Load Balancing</strong></h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th><strong>Concept</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Techniques</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Load Balancing</strong></td>
+<td>Distribute incoming traffic across multiple servers to ensure reliability and prevent overload.</td>
+<td><strong>Round-robin</strong>, <strong>Least Connections</strong>, <strong>Weighted balancing</strong> using <strong>NGINX</strong>, <strong>HAProxy</strong>, <strong>AWS ELB</strong>.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h3><strong>2.  Fault Tolerance, CAP Theorem</strong></h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th><strong>Concept</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Techniques</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Fault Tolerance</strong></td>
+<td>Ensuring that the system remains operational even if some components fail.</td>
+<td><strong>Replication</strong>, <strong>Consensus algorithms</strong> (e.g., <strong>Paxos</strong>, <strong>Raft</strong>), <strong>Failover</strong> systems.</td>
+</tr>
+<tr>
+<td><strong>CAP Theorem</strong></td>
+<td>A distributed system can only guarantee <strong>two</strong> of the following: <strong>Consistency</strong>, <strong>Availability</strong>, or <strong>Partition Tolerance</strong>.</td>
+<td>Choose between <strong>eventual consistency</strong> or <strong>strong consistency</strong> depending on system requirements.</td>
+</tr>
+<tr>
+<td><strong>Eventual Consistency</strong></td>
+<td>Allowing data to propagate slowly across nodes, often used in <strong>NoSQL</strong> databases.</td>
+<td>Use <strong>CRDTs</strong>, <strong>Event sourcing</strong>, <strong>CQRS</strong>, <strong>Tunable consistency</strong>.</td>
+</tr>
+<tr>
+<td><strong>Data Replication</strong></td>
+<td>Duplication of data across nodes to ensure high availability and fault tolerance.</td>
+<td>Use <strong>Master-Slave replication</strong>, <strong>Multi-region replication</strong>.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h3><strong>3. Queues and Asynchronous Processing</strong></h3>
+<markdown-accessiblity-table><table role="table">
+<thead>
+<tr>
+<th><strong>Concept</strong></th>
+<th><strong>Description</strong></th>
+<th><strong>Techniques</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Asynchronous Processing</strong></td>
+<td>Offloading long-running tasks to background jobs for better system responsiveness.</td>
+<td><strong>Message queues</strong> like <strong>RabbitMQ</strong>, <strong>Kafka</strong>, <strong>Amazon SQS</strong>, <strong>Job schedulers</strong>.</td>
+</tr>
+<tr>
+<td><strong>Event-driven Architectures</strong></td>
+<td>Architecting systems to react to events in real-time.</td>
+<td>Use <strong>Event-driven systems</strong> with <strong>publish-subscribe</strong> models.</td>
+</tr>
+</tbody>
+</table></markdown-accessiblity-table>
+<h3><strong>4. Auto-Scaling and Elastic Infrastructure</strong></h3>
+<h3><strong>5. Global Distribution &amp; Multi-Region Deployment</strong></h3></div>
+<div style="font-size:small;margin-top:8px;float:right;"></div>
+
+<button class="btn btn-block" type="button" onclick="openComments()" id="cmButton">评论</button>
+<div class="comments" id="comments"></div>
+
+</div>
+    <div id="footer"><div id="footer1">Copyright © <span id="copyrightYear"></span> <a href="https://leadtechinterview.github.io">Lead Tech Interview</a></div>
+<div id="footer2">
+    <span id="runday"></span><span>Powered by <a href="https://meekdai.com/Gmeek.html" target="_blank">Gmeek</a></span>
+</div>
+
+<script>
+var now=new Date();
+document.getElementById("copyrightYear").innerHTML=now.getFullYear();
+
+if(""!=""){
+    var startSite=new Date("");
+    var diff=now.getTime()-startSite.getTime();
+    var diffDay=Math.floor(diff/(1000*60*60*24));
+    document.getElementById("runday").innerHTML="网站运行"+diffDay+"天"+" • ";
+}
+</script></div>
+</body>
+<script>
+var IconList={'sun': 'M8 10.5a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM8 12a4 4 0 100-8 4 4 0 000 8zM8 0a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0V.75A.75.75 0 018 0zm0 13a.75.75 0 01.75.75v1.5a.75.75 0 01-1.5 0v-1.5A.75.75 0 018 13zM2.343 2.343a.75.75 0 011.061 0l1.06 1.061a.75.75 0 01-1.06 1.06l-1.06-1.06a.75.75 0 010-1.06zm9.193 9.193a.75.75 0 011.06 0l1.061 1.06a.75.75 0 01-1.06 1.061l-1.061-1.06a.75.75 0 010-1.061zM16 8a.75.75 0 01-.75.75h-1.5a.75.75 0 010-1.5h1.5A.75.75 0 0116 8zM3 8a.75.75 0 01-.75.75H.75a.75.75 0 010-1.5h1.5A.75.75 0 013 8zm10.657-5.657a.75.75 0 010 1.061l-1.061 1.06a.75.75 0 11-1.06-1.06l1.06-1.06a.75.75 0 011.06 0zm-9.193 9.193a.75.75 0 010 1.06l-1.06 1.061a.75.75 0 11-1.061-1.06l1.06-1.061a.75.75 0 011.061 0z', 'moon': 'M9.598 1.591a.75.75 0 01.785-.175 7 7 0 11-8.967 8.967.75.75 0 01.961-.96 5.5 5.5 0 007.046-7.046.75.75 0 01.175-.786zm1.616 1.945a7 7 0 01-7.678 7.678 5.5 5.5 0 107.678-7.678z', 'sync': 'M1.705 8.005a.75.75 0 0 1 .834.656 5.5 5.5 0 0 0 9.592 2.97l-1.204-1.204a.25.25 0 0 1 .177-.427h3.646a.25.25 0 0 1 .25.25v3.646a.25.25 0 0 1-.427.177l-1.38-1.38A7.002 7.002 0 0 1 1.05 8.84a.75.75 0 0 1 .656-.834ZM8 2.5a5.487 5.487 0 0 0-4.131 1.869l1.204 1.204A.25.25 0 0 1 4.896 6H1.25A.25.25 0 0 1 1 5.75V2.104a.25.25 0 0 1 .427-.177l1.38 1.38A7.002 7.002 0 0 1 14.95 7.16a.75.75 0 0 1-1.49.178A5.5 5.5 0 0 0 8 2.5Z', 'home': 'M6.906.664a1.749 1.749 0 0 1 2.187 0l5.25 4.2c.415.332.657.835.657 1.367v7.019A1.75 1.75 0 0 1 13.25 15h-3.5a.75.75 0 0 1-.75-.75V9H7v5.25a.75.75 0 0 1-.75.75h-3.5A1.75 1.75 0 0 1 1 13.25V6.23c0-.531.242-1.034.657-1.366l5.25-4.2Zm1.25 1.171a.25.25 0 0 0-.312 0l-5.25 4.2a.25.25 0 0 0-.094.196v7.019c0 .138.112.25.25.25H5.5V8.25a.75.75 0 0 1 .75-.75h3.5a.75.75 0 0 1 .75.75v5.25h2.75a.25.25 0 0 0 .25-.25V6.23a.25.25 0 0 0-.094-.195Z', 'github': 'M8 0c4.42 0 8 3.58 8 8a8.013 8.013 0 0 1-5.45 7.59c-.4.08-.55-.17-.55-.38 0-.27.01-1.13.01-2.2 0-.75-.25-1.23-.54-1.48 1.78-.2 3.65-.88 3.65-3.95 0-.88-.31-1.59-.82-2.15.08-.2.36-1.02-.08-2.12 0 0-.67-.22-2.2.82-.64-.18-1.32-.27-2-.27-.68 0-1.36.09-2 .27-1.53-1.03-2.2-.82-2.2-.82-.44 1.1-.16 1.92-.08 2.12-.51.56-.82 1.28-.82 2.15 0 3.06 1.86 3.75 3.64 3.95-.23.2-.44.55-.51 1.07-.46.21-1.61.55-2.33-.66-.15-.24-.6-.83-1.23-.82-.67.01-.27.38.01.53.34.19.73.9.82 1.13.16.45.68 1.31 2.69.94 0 .67.01 1.3.01 1.49 0 .21-.15.45-.55.38A7.995 7.995 0 0 1 0 8c0-4.42 3.58-8 8-8Z'};
+var utterancesLoad=0;
+
+let themeSettings={
+    "dark": ["dark","moon","#00f0ff","dark-blue"],
+    "light": ["light","sun","#ff5000","github-light"],
+    "auto": ["auto","sync","","preferred-color-scheme"]
+};
+function changeTheme(mode, icon, color, utheme){
+    document.documentElement.setAttribute("data-color-mode",mode);
+    document.getElementById("themeSwitch").setAttribute("d",value=IconList[icon]);
+    document.getElementById("themeSwitch").parentNode.style.color=color;
+    if(utterancesLoad==1){utterancesTheme(utheme);}
+}
+function modeSwitch(){
+    let currentMode=document.documentElement.getAttribute('data-color-mode');
+    let newMode = currentMode === "light" ? "dark" : currentMode === "dark" ? "auto" : "light";
+    localStorage.setItem("meek_theme", newMode);
+    if(themeSettings[newMode]){
+        changeTheme(...themeSettings[newMode]);
+    }
+}
+function utterancesTheme(theme){
+    const message={type:'set-theme',theme: theme};
+    const iframe=document.getElementsByClassName('utterances-frame')[0];
+    iframe.contentWindow.postMessage(message,'https://utteranc.es');
+}
+if(themeSettings[theme]){changeTheme(...themeSettings[theme]);}
+console.log("\n %c Gmeek last https://github.com/Meekdai/Gmeek \n","padding:5px 0;background:#02d81d;color:#fff");
+</script>
+
+<script>
+document.getElementById("pathHome").setAttribute("d",IconList["home"]);
+document.getElementById("pathIssue").setAttribute("d",IconList["github"]);
+
+
+
+function openComments(){
+    cm=document.getElementById("comments");
+    cmButton=document.getElementById("cmButton");
+    cmButton.innerHTML="loading";
+    span=document.createElement("span");
+    span.setAttribute("class","AnimatedEllipsis");
+    cmButton.appendChild(span);
+
+    script=document.createElement("script");
+    script.setAttribute("src","https://utteranc.es/client.js");
+    script.setAttribute("repo","LeadTechInterview/leadtechinterview.github.io");
+    script.setAttribute("issue-term","title");
+    
+    if(localStorage.getItem("meek_theme")=="dark"){script.setAttribute("theme","dark-blue");}
+    else if(localStorage.getItem("meek_theme")=="light") {script.setAttribute("theme","github-light");}
+    else{script.setAttribute("theme","preferred-color-scheme");}
+    
+    script.setAttribute("crossorigin","anonymous");
+    script.setAttribute("async","");
+    cm.appendChild(script);
+
+    int=self.setInterval("iFrameLoading()",200);
+}
+
+function iFrameLoading(){
+    var utterances=document.getElementsByClassName('utterances');
+    if(utterances.length==1){
+        if(utterances[0].style.height!=""){
+            utterancesLoad=1;
+            int=window.clearInterval(int);
+            document.getElementById("cmButton").style.display="none";
+            console.log("utterances Load OK");
+        }
+    }
+}
+
+
+
+</script>
+<script src='https://blog.meekdai.com/Gmeek/plugins/GmeekTOC.js'></script>
+
+</html>
