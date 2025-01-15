@@ -14,7 +14,7 @@ assignees: ''
 
 ## Non-Functional Requirements
 
-> Focus on system qualities like scalability, latency, and availability. Quantify where possible (e.g., "render feeds in under 200ms").
+> Focus on system qualities like scalability, latency, and availability, consistency, security, durability, fault tolerance. Quantify where possible (e.g., "render feeds in under 200ms").
 
 ## Capacity Estimation
 
